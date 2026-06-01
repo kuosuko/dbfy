@@ -1,6 +1,6 @@
 {
   "name": "@kuosuko/dbfy",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "description": "DB-ify your migrations — generate a clean post-merge schema snapshot from a folder of SQL migration files. Built for AI agents.",
   "license": "MIT",
   "type": "module",
