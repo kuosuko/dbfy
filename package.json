@@ -7,7 +7,7 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "bin": {
-    "dbfy": "./dist/cli.js"
+    "dbfy": "dist/cli.js"
   },
   "files": [
     "dist",
@@ -27,7 +27,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/kuosuko/dbfy.git"
+    "url": "git+https://github.com/kuosuko/dbfy.git"
   },
   "bugs": {
     "url": "https://github.com/kuosuko/dbfy/issues"
