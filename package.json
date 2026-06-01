@@ -1,0 +1,56 @@
+{
+  "name": "dbfy",
+  "version": "0.1.0",
+  "description": "DB-ify your migrations — generate a clean post-merge schema snapshot from a folder of SQL migration files. Built for AI agents.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "dbfy": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "migration",
+    "schema",
+    "snapshot",
+    "ai",
+    "postgres",
+    "mysql",
+    "sqlite",
+    "devtools",
+    "cli"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kuosuko/dbfy.git"
+  },
+  "bugs": {
+    "url": "https://github.com/kuosuko/dbfy/issues"
+  },
+  "homepage": "https://github.com/kuosuko/dbfy#readme",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "test": "node --test --import tsx/esm test/*.test.ts",
+    "test:run": "node --import tsx/esm --test test/*.test.ts",
+    "lint": "tsc --noEmit",
+    "prepare": "npm run build",
+    "prepublishOnly": "npm run lint && npm test"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.5.0"
+  }
+}
