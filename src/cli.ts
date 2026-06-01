@@ -25,12 +25,12 @@ Usage:
   dbfy [options]
 
 Options:
-  -m, --migrations <dir>   Directory of migration files (default: ./migrations)
-  -o, --out <file|->       Output file, or '-' for stdout (default: ./schema.snapshot.sql)
-  -d, --dialect <name>     sqlite | postgres | mysql (default: sqlite)
-      --no-header          Omit the metadata header from the snapshot
-  -h, --help               Show this help
-  -v, --version            Show version
+   -m, --migrations <dir>   Directory of migration files (default: ./migrations)
+   -o, --out <file|->       Output file, or '-' for stdout (default: ./schema.snapshot.sql)
+   -d, --dialect <name>     sqlite | postgres (default: sqlite)
+       --no-header          Omit the metadata header from the snapshot
+   -h, --help               Show this help
+   -v, --version            Show version
 
 Examples:
   dbfy

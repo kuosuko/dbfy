@@ -36,12 +36,30 @@ npx dbfy
 dbfy [options]
 
 Options:
-  -m, --migrations <dir>   Directory of migration files (default: ./migrations)
-  -o, --out <file|->       Output file, or '-' for stdout (default: ./schema.snapshot.sql)
-  -d, --dialect <name>     sqlite | postgres | mysql (default: sqlite)
-      --no-header          Omit the metadata header from the snapshot
-  -h, --help               Show this help
-  -v, --version            Show version
+   -m, --migrations <dir>   Directory of migration files (default: ./migrations)
+   -o, --out <file|->       Output file, or '-' for stdout (default: ./schema.snapshot.sql)
+   -d, --dialect <name>     sqlite | postgres (default: sqlite)
+       --no-header          Omit the metadata header from the snapshot
+   -h, --help               Show this help
+   -v, --version            Show version
+```
+
+### Dialects
+
+| Dialect | Engine | Notes |
+|---------|--------|-------|
+| `sqlite` | better-sqlite3 (in-memory) | Default. Fast (~20ms), zero-setup |
+| `postgres` | PGlite (in-memory WASM Postgres) | Supports PG-specific types: JSONB, ENUM, partial indexes, arrays, etc. |
+
+```bash
+# SQLite migrations (default)
+dbfy --migrations ./migrations --out schema.snapshot.sql
+
+# PostgreSQL migrations
+dbfy --migrations ./migrations --out schema.snapshot.sql --dialect postgres
+
+# Pipe to stdout for agent context
+dbfy --migrations ./migrations --dialect postgres --out -
 ```
 
 ### Migration filename pattern
@@ -101,9 +119,30 @@ console.log(result.warnings);
 
 ## Limitations
 
-- **v0.1.0 only supports SQLite** as the apply engine. Postgres and MySQL support is on the roadmap.
+- **MySQL is not yet supported.** SQLite and PostgreSQL are available now.
 - Migrations that contain **data backfills** (not just DDL) are still applied, but the backfill data doesn't end up in the schema file (which is correct — the schema file describes structure, not data).
-- For Postgres/MySQL-specific syntax (JSONB, partial indexes, ENUM types, etc.), use a real DB engine. A future version will spin up ephemeral Docker containers for these.
+
+## Install as Agent Skill
+
+dbfy ships with a `SKILL.md` that teaches AI agents when and how to use it.
+
+**One-command install (recommended):**
+```bash
+npx skills add kuosuko/dbfy -g
+```
+
+**Manual install:**
+
+| Agent | Location |
+|-------|----------|
+| Claude Code | `~/.claude/skills/dbfy/SKILL.md` or `.claude/skills/dbfy/SKILL.md` |
+| OpenCode | `~/.config/opencode/skills/dbfy/SKILL.md` |
+| Cursor | `.cursor/skills/dbfy/SKILL.md` |
+| Windsurf | `.windsurf/skills/dbfy/SKILL.md` |
+
+The skill tells the agent to use `dbfy` instead of reading migration files one by one, keeping context lean.
+
+Browse skills at [skills.sh](https://skills.sh).
 
 ## Development
 

@@ -66,8 +66,8 @@ test('snap: rejects unsupported dialect', async () => {
       snap({
         migrationsDir: '/tmp/none',
         out: '-',
-        dialect: 'postgres' as never,
+        dialect: 'mysql' as never,
       }),
-    /not yet supported/
+    /not supported/
   );
 });

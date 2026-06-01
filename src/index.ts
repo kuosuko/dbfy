@@ -14,22 +14,29 @@ import type { SnapOptions, SnapResult } from './types.js';
 export type { SnapOptions, SnapResult, MigrationFile, Dialect } from './types.js';
 export { discoverMigrations } from './discover.js';
 export { applyMigrationsSqlite, dumpSchemaSqlite } from './apply.js';
+export { applyMigrationsPg } from './apply-pg.js';
 
-/**
- * High-level: take a migrations dir, return the snapshot.
- */
+const SUPPORTED_DIALECTS = new Set(['sqlite', 'postgres']);
+
 export async function snap(options: SnapOptions): Promise<SnapResult> {
-  if (options.dialect !== 'sqlite') {
+  if (!SUPPORTED_DIALECTS.has(options.dialect)) {
     throw new Error(
-      `Dialect "${options.dialect}" is not yet supported. ` +
-        `Only "sqlite" is implemented in v0.1.0. ` +
-        `Postgres and MySQL support is on the roadmap.`
+      `Dialect "${options.dialect}" is not supported. ` +
+        `Supported: sqlite, postgres. MySQL support is on the roadmap.`
     );
   }
 
   const { migrations } = await discoverMigrations(options.migrationsDir);
 
-  const { schema, warnings } = applyMigrationsSqlite(migrations);
+  let schema: string;
+  let warnings: string[];
+
+  if (options.dialect === 'postgres') {
+    const { applyMigrationsPg } = await import('./apply-pg.js');
+    ({ schema, warnings } = await applyMigrationsPg(migrations));
+  } else {
+    ({ schema, warnings } = applyMigrationsSqlite(migrations));
+  }
 
   let output = schema;
   if (options.includeHeader !== false) {
