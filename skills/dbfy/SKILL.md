@@ -22,13 +22,13 @@ description: Generate a clean post-merge schema snapshot from a folder of SQL mi
 
 ```bash
 # SQLite migrations (default, ~20ms)
-npx dbfy --migrations ./migrations --out schema.snapshot.sql
+npx @kuosuko/dbfy --migrations ./migrations --out schema.snapshot.sql
 
 # PostgreSQL migrations (supports JSONB, ENUM, arrays, partial indexes, etc.)
-npx dbfy --migrations ./migrations --out schema.snapshot.sql --dialect postgres
+npx @kuosuko/dbfy --migrations ./migrations --out schema.snapshot.sql --dialect postgres
 
 # Output to stdout — pipe directly into agent context
-npx dbfy --migrations ./migrations --dialect postgres --out -
+npx @kuosuko/dbfy --migrations ./migrations --dialect postgres --out -
 ```
 
 ## Dialects
@@ -48,7 +48,7 @@ npx dbfy --migrations ./migrations --dialect postgres --out -
 ## Programmatic API
 
 ```ts
-import { snap } from 'dbfy';
+import { snap } from '@kuosuko/dbfy';
 
 const result = await snap({
   migrationsDir: './migrations',

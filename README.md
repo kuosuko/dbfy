@@ -21,13 +21,13 @@ dbfy: wrote schema.snapshot.sql (4 migrations, 23ms)
 ## Install
 
 ```bash
-npm install -g dbfy
+npm install -g @kuosuko/dbfy
 ```
 
 Or run without installing:
 
 ```bash
-npx dbfy
+npx @kuosuko/dbfy
 ```
 
 ## Usage
@@ -104,7 +104,7 @@ The whole thing takes ~20-50ms for typical projects. No external services, no Do
 ## Programmatic API
 
 ```ts
-import { snap } from 'dbfy';
+import { snap } from '@kuosuko/dbfy';
 
 const result = await snap({
   migrationsDir: './migrations',
