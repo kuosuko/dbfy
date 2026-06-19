@@ -23,7 +23,18 @@ export interface DiscoverResult {
 }
 
 export async function discoverMigrations(dir: string): Promise<DiscoverResult> {
-  const entries = await readdir(dir, { withFileTypes: true });
+  let entries;
+  try {
+    entries = await readdir(dir, { withFileTypes: true });
+  } catch (err) {
+    if (err instanceof Error && (err as NodeJS.ErrnoException).code === 'ENOENT') {
+      throw new Error(
+        `No migrations directory found at "${dir}". ` +
+          `Pass --migrations <dir> to point dbfy at your SQL migration files.`
+      );
+    }
+    throw err;
+  }
   const migrations: MigrationFile[] = [];
   const skipped: string[] = [];
 

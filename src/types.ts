@@ -24,6 +24,12 @@ export interface SnapOptions {
   dialect: Dialect;
   /** Add a header comment with metadata to the snapshot */
   includeHeader?: boolean;
+  /**
+   * MySQL connection URL. When set (or MYSQL_URL / DATABASE_URL in env),
+   * the `mysql` dialect runs against a real server for full fidelity
+   * instead of the default zero-setup pure-parse engine.
+   */
+  serverUrl?: string;
 }
 
 export interface SnapResult {

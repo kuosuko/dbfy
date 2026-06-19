@@ -7,9 +7,14 @@ When you're developing a database with `001-xxx.sql`, `002-xxx.sql`, ..., `042-x
 **dbfy** applies your migrations to an ephemeral database in order, dumps the final schema, and hands you a single clean `schema.snapshot.sql` file. No live DB required. No Docker. No waiting.
 
 ```
-$ dbfy --migrations ./migrations --out schema.snapshot.sql
-dbfy: wrote schema.snapshot.sql (4 migrations, 23ms)
+$ dbfy
+dbfy: auto-detected migrations in "migrations"
+dbfy: auto-detected dialect "postgres"
+dbfy: wrote ./schema.snapshot.sql (4 migrations, 23ms)
 ```
+
+Run it bare in your project: dbfy finds your migrations folder and infers the
+dialect from the SQL itself — no flags required.
 
 ## Why
 
@@ -36,30 +41,76 @@ npx @kuosuko/dbfy
 dbfy [options]
 
 Options:
-   -m, --migrations <dir>   Directory of migration files (default: ./migrations)
+   -m, --migrations <dir>   Directory of migration files (auto-detected by default)
    -o, --out <file|->       Output file, or '-' for stdout (default: ./schema.snapshot.sql)
-   -d, --dialect <name>     sqlite | postgres (default: sqlite)
+   -d, --dialect <name>     sqlite | postgres | mysql (auto-detected by default)
+       --url <url>          MySQL connection URL for full-fidelity server mode
+                            (also reads MYSQL_URL / DATABASE_URL)
+       --check              Verify the --out file is up to date; exit 1 on drift (CI)
+       --quiet              Suppress the summary line
        --no-header          Omit the metadata header from the snapshot
    -h, --help               Show this help
    -v, --version            Show version
 ```
 
+Both `--migrations` and `--dialect` are auto-detected when omitted. Anything you
+pass explicitly always wins over detection.
+
 ### Dialects
 
-| Dialect | Engine | Notes |
-|---------|--------|-------|
-| `sqlite` | better-sqlite3 (in-memory) | Default. Fast (~20ms), zero-setup |
-| `postgres` | PGlite (in-memory WASM Postgres) | Supports PG-specific types: JSONB, ENUM, partial indexes, arrays, etc. |
+| Dialect | Engine | Server? | Notes |
+|---------|--------|---------|-------|
+| `sqlite` | better-sqlite3 (in-memory) | No | Fast (~20ms), zero-setup |
+| `postgres` | PGlite (in-memory WASM Postgres) | No | Full PG types: JSONB, ENUM, arrays, partial indexes |
+| `mysql` | **pure DDL parser** (default) | **No** | Parses DDL to the final schema in milliseconds — no server, no Docker |
+| `mysql` + `--url` | real MySQL via `mysql2` | Yes | Full fidelity: views, triggers, routines, generated columns |
 
 ```bash
-# SQLite migrations (default)
-dbfy --migrations ./migrations --out schema.snapshot.sql
+# SQLite migrations (auto-detected)
+dbfy --out schema.snapshot.sql
 
 # PostgreSQL migrations
-dbfy --migrations ./migrations --out schema.snapshot.sql --dialect postgres
+dbfy --out schema.snapshot.sql --dialect postgres
+
+# MySQL — pure-parse, NO server needed (this is dbfy's differentiator)
+dbfy --out schema.snapshot.sql --dialect mysql
+
+# MySQL — full fidelity against a real server
+dbfy --dialect mysql --url mysql://root:root@localhost:3306/ --out schema.snapshot.sql
 
 # Pipe to stdout for agent context
-dbfy --migrations ./migrations --dialect postgres --out -
+dbfy --dialect postgres --out -
+```
+
+#### Why MySQL has two modes
+
+Unlike Postgres (which has PGlite, a mature in-memory WASM build), MySQL has **no
+embeddable engine**. Most tools therefore need a live MySQL or a Docker container
+just to compute the final schema. dbfy's default MySQL mode instead **parses the
+DDL directly** — folding every `ALTER TABLE` back into its `CREATE TABLE` — so you
+get the post-merge schema in milliseconds with zero setup.
+
+The pure-parse engine understands structure (tables, columns, keys, indexes,
+foreign keys) but not stored programs. When you need views, triggers, routines, or
+generated columns reproduced exactly, pass `--url` (or set `MYSQL_URL` /
+`DATABASE_URL`) and dbfy runs the migrations against a real server in a throwaway
+database, then drops it.
+
+### CI: fail the build when a snapshot is stale
+
+`--check` regenerates the schema in memory and compares it to the committed
+snapshot (ignoring the volatile `-- generated:` timestamp line). It exits `0` when
+they match and `1` on drift — so a contributor who edits a migration but forgets to
+refresh `schema.snapshot.sql` fails CI.
+
+```bash
+# In CI, after npm ci:
+dbfy --check
+```
+
+```yaml
+# .github/workflows/schema.yml
+- run: npx @kuosuko/dbfy --check
 ```
 
 ### Migration filename pattern
@@ -109,7 +160,8 @@ import { snap } from '@kuosuko/dbfy';
 const result = await snap({
   migrationsDir: './migrations',
   out: './schema.snapshot.sql',  // or '-' for stdout
-  dialect: 'sqlite',
+  dialect: 'mysql',
+  serverUrl: process.env.MYSQL_URL, // optional — omit for zero-setup pure-parse
   includeHeader: true,
 });
 
@@ -119,8 +171,8 @@ console.log(result.warnings);
 
 ## Limitations
 
-- **MySQL is not yet supported.** SQLite and PostgreSQL are available now.
 - Migrations that contain **data backfills** (not just DDL) are still applied, but the backfill data doesn't end up in the schema file (which is correct — the schema file describes structure, not data).
+- **MySQL pure-parse mode** (the default, no `--url`) reproduces structure — tables, columns, keys, indexes, foreign keys — but not stored programs (views, triggers, routines) or generated columns. dbfy warns when it skips one; pass `--url` for full fidelity.
 
 ## Install as Agent Skill
 
