@@ -1,6 +1,6 @@
 ---
 name: dbfy
-description: Generate a clean post-merge schema snapshot from a folder of SQL migration files. Use when you need to understand the current database schema but only have migration files, or want to feed one canonical schema into context instead of dozens of individual migrations. Supports SQLite and PostgreSQL (via in-memory PGlite). Triggers on: "what does the schema look like", "show me the database structure", "consolidate migrations", "schema snapshot", "current database schema".
+description: Generate a clean post-merge schema snapshot from a folder of SQL migration files. Use when you need to understand the current database schema but only have migration files, or want to feed one canonical schema into context instead of dozens of individual migrations. Supports SQLite, PostgreSQL (in-memory PGlite), and MySQL (zero-setup pure DDL parser by default; real server with --url). Triggers on: "what does the schema look like", "show me the database structure", "consolidate migrations", "schema snapshot", "current database schema".
 ---
 
 # dbfy — DB-ify your migrations
@@ -21,22 +21,36 @@ description: Generate a clean post-merge schema snapshot from a folder of SQL mi
 ## Usage
 
 ```bash
-# SQLite migrations (default, ~20ms)
-npx @kuosuko/dbfy --migrations ./migrations --out schema.snapshot.sql
+# Zero-config: auto-detects the migrations dir AND the dialect from the SQL
+npx @kuosuko/dbfy --out -
 
-# PostgreSQL migrations (supports JSONB, ENUM, arrays, partial indexes, etc.)
+# Explicit dialect
 npx @kuosuko/dbfy --migrations ./migrations --out schema.snapshot.sql --dialect postgres
 
-# Output to stdout — pipe directly into agent context
-npx @kuosuko/dbfy --migrations ./migrations --dialect postgres --out -
+# MySQL — pure-parse, NO server / Docker needed (dbfy's differentiator)
+npx @kuosuko/dbfy --migrations ./migrations --dialect mysql --out -
+
+# MySQL — full fidelity (views/triggers/routines) against a real server
+npx @kuosuko/dbfy --dialect mysql --url mysql://root:root@localhost:3306/ --out -
+
+# CI: fail if the committed snapshot is stale (exit 1 on drift)
+npx @kuosuko/dbfy --check
 ```
 
 ## Dialects
 
-| Dialect | Engine | Speed | Notes |
-|---------|--------|-------|-------|
-| `sqlite` | better-sqlite3 (in-memory) | ~20ms | Default. Zero-setup. |
-| `postgres` | PGlite (in-memory WASM Postgres) | ~800ms | Full PG type support. |
+| Dialect | Engine | Server? | Notes |
+|---------|--------|---------|-------|
+| `sqlite` | better-sqlite3 (in-memory) | No | Default fallback. Zero-setup. |
+| `postgres` | PGlite (in-memory WASM Postgres) | No | Full PG type support. |
+| `mysql` | pure DDL parser (default) | No | Milliseconds, no server. Structure only. |
+| `mysql` + `--url` | real MySQL via `mysql2` | Yes | Full fidelity incl. views/triggers/routines. |
+
+**MySQL note:** MySQL has no embeddable engine, so most tools need a live server or
+Docker to compute the final schema. dbfy's default MySQL mode parses the DDL directly
+(folding `ALTER TABLE` into `CREATE TABLE`) for an instant, zero-setup snapshot. It
+covers tables, columns, keys, indexes, and foreign keys; pass `--url` only when you
+need stored programs reproduced exactly.
 
 ## What it does
 
@@ -66,3 +80,6 @@ console.log(result.filesProcessed, 'migrations applied');
 - After running dbfy, you can reason about the full schema in one shot — table names, columns, types, constraints, indexes, foreign keys
 - For destructive migrations (column drops, table renames), the snapshot correctly reflects the post-merge state
 - Re-run dbfy after any migration change to get an updated snapshot
+- Run dbfy bare (no `--migrations`/`--dialect`) to let it auto-detect; pass flags only to override
+- In CI, `dbfy --check` guards against migrations that were changed without refreshing the snapshot
+- If a MySQL snapshot warns about skipped views/triggers, re-run with `--url <mysql-url>` for full fidelity

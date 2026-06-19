@@ -25,7 +25,6 @@ export function applyMigrationsSqlite(files: MigrationFile[]): ApplyResult {
         db.exec(f.contents);
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
-        warnings.push(`${f.filename}: ${msg}`);
         throw new Error(
           `Migration ${f.filename} failed: ${msg}\n` +
             `Tip: dbfy uses SQLite as the snapshot engine. For Postgres/MySQL-specific ` +
